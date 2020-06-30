@@ -1,0 +1,1402 @@
+/*README: Each class should be placed inside their own script or there may be unintended effects. Some classes probably(like the singletons) don't need to 
+derive from MonoBehaviour but I'm lazy. Also sometimes I'm using unnecessary libraries, but that's probably just because of visual studio 
+defaults. There's also random empty start functions and update loops here and there and that's also cuz I'm too lazy to remove them lol. Lastly, if you're gonna use
+this for anything, you may wanna remove anything that doesn't relate to input from update loops to prevent errors. */
+
+
+
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class AnchorPos : MonoBehaviour
+{
+    void Start()
+    {
+        var nextPos = new Vector3(0, 1, 1);
+        transform.position = Camera.main.ViewportToWorldPoint(nextPos);
+
+        Vector3 startPos = transform.position;
+        float x = transform.position.x;
+        float y = transform.position.y;
+        startPos = new Vector3(x, y, 0);
+        transform.position = startPos;
+    }
+}
+
+using UnityEngine.Audio;
+using System;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+
+public class AudioManager : MonoBehaviour
+{
+
+	public static AudioManager instance;
+	public AudioMixerGroup mixerGroup;
+
+	public int currentlvl;
+
+	public Sound[] sounds;
+
+	void Awake()
+	{
+		 
+	
+		if (instance != null)
+		{
+			Destroy(gameObject);
+		}
+		else
+		{
+			instance = this;
+			DontDestroyOnLoad(gameObject);
+		}
+
+		foreach (Sound s in sounds)
+		{
+			s.source = gameObject.AddComponent<AudioSource>();
+			s.source.clip = s.clip;
+			s.source.loop = s.loop;
+
+			s.source.outputAudioMixerGroup = mixerGroup;
+		}
+	}
+
+	private void Start()
+	{
+		
+			Play("Theme");
+		
+	}
+	private void Update()
+	{
+		
+	}
+
+	public void Play(string sound)
+	{
+		Sound s = Array.Find(sounds, item => item.name == sound);
+		if (s == null)
+		{
+			Debug.LogWarning("Sound: " + name + " not found!");
+			return;
+		}
+
+		s.source.volume = s.volume * (1f + UnityEngine.Random.Range(-s.volumeVariance / 2f, s.volumeVariance / 2f));
+		s.source.pitch = s.pitch * (1f + UnityEngine.Random.Range(-s.pitchVariance / 2f, s.pitchVariance / 2f));
+
+		s.source.Play();
+	
+	}
+
+	public void Stop(string sound)
+	{
+		Sound s = Array.Find(sounds, item => item.name == sound);
+		
+		s.source.Stop();
+	}
+	public void PlayOnObject(int i, GameObject attached, string sound)
+	{
+		
+		Sound s = Array.Find(sounds, item => item.name == sound);
+		if (i == 1)
+		{
+
+			s.source = attached.AddComponent<AudioSource>();
+			s.source.clip = s.clip;
+			s.source.loop = s.loop;
+
+			s.source.volume = s.volume;
+			s.source.pitch = s.pitch;
+			attached.GetComponent<AudioSource>().Play();
+		}
+		if (i == 0)
+		{
+			foreach (AudioSource stopAll in attached.GetComponents<AudioSource>())
+			{
+		
+				stopAll.Stop();
+			}
+		}
+		
+	}
+}
+
+
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using UnityEngine.UI;
+public class btnScript : MonoBehaviour
+{
+    public void previous()
+    {
+        Debug.Log(SceneManager.GetActiveScene().buildIndex);
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex -1 );
+    }
+}
+
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class CameraColor : MonoBehaviour
+{
+    private Color32 backgroundColor1 = ColorThemes.backgroundColor;
+    Camera currentInstance;
+    // Start is called before the first frame update
+    void Start()
+    {
+        currentInstance = GetComponent<Camera>();
+        currentInstance.backgroundColor = backgroundColor1;
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        
+    }
+}
+
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+
+public class ColorThemes: MonoBehaviour
+{
+ 
+    public static Color32 backgroundColor = new Color32 (30, 30, 0, 255);
+    public static Color32 objectColor = new Color32(135, 135, 95, 255);
+
+
+}
+
+using System.Collections;
+using System.Collections.Generic;
+using TMPro;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using UnityEngine.UI;
+
+
+
+public class CurrentLevelManager : MonoBehaviour
+{
+    public static bool lvlIsFinished = false;
+
+    private bool fadeFinished;
+    private bool playOnce = true;
+    private bool secPassed = false;
+    private int y;
+
+    public int current;
+
+    private TextMeshProUGUI lvlIndicateText;
+
+    public Button leftBtn;
+    public Button rightBtn;
+    private Button[] btn;
+
+    private Color32 textColor = ColorThemes.objectColor;
+
+    // Start is called before the first frame update
+    void Start()
+    {
+        current = nextLvl.next;
+        lvlIndicateText = GetComponentInChildren<TextMeshProUGUI>();
+        btn = GetComponentsInChildren<Button>(); 
+        foreach (Button b in btn)
+          {
+              ColorBlock applyAll = b.colors;
+              applyAll.normalColor = textColor;
+           
+        
+              applyAll.highlightedColor = textColor;
+              applyAll.pressedColor = textColor;
+              applyAll.selectedColor = textColor;
+              applyAll.disabledColor = textColor;
+              b.colors = applyAll;
+
+          }
+        if(current < SceneManager.GetActiveScene().buildIndex )
+        {
+            
+            rightBtn.gameObject.SetActive(false);
+        }
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        current = nextLvl.next;
+
+        y = SceneManager.GetActiveScene().buildIndex;
+          if (transform.childCount <= 1)
+          {
+            
+            StartCoroutine("Wait1Sec");
+            if (secPassed)
+            {
+                
+                y++;
+                if (y <= SceneManager.sceneCountInBuildSettings - 1)
+                {
+                    if (playOnce)
+                    {
+                        if (!rightBtn.IsActive())
+                        {
+                            nextLvl.next++;//potential rework using current index
+                        }
+                        FindObjectOfType<AudioManager>().Play("NextLevelTone");
+                        playOnce = false;
+                    }
+                    
+                    
+                    lvlIndicateText.color = textColor;
+                    lvlIndicateText.text = (y).ToString();
+                    StartCoroutine("TextFade");
+                    lvlIsFinished = false;
+                    if (fadeFinished)
+                    {
+                        
+                        SceneManager.LoadScene(y);
+                        Debug.Log(y);//does not show current scene, but the scene about to be loaded
+                    }
+                }
+                if (y > SceneManager.sceneCountInBuildSettings - 1)
+                {
+                    if (playOnce)
+                    {
+                        FindObjectOfType<AudioManager>().Play("NextLevelTone");
+                        playOnce = false;
+                    }
+                    lvlIndicateText.color = textColor;
+                    lvlIndicateText.text = "Thanks for playing! Source code in desc :)";
+                    
+                    StartCoroutine(TextFade());
+                    StartCoroutine(Back2Menu());
+                }
+                secPassed = false;
+            }
+            
+       
+          }
+    }
+
+
+
+    IEnumerator TextFade()
+    {
+        for (float f = 0; f <= 1.0f; f+= 0.01f)
+        {
+            Color c = lvlIndicateText.color;
+            c.a = f;
+            lvlIndicateText.color = c;
+
+            yield return new WaitForSeconds(0.01f);
+        }
+        for (float f = 1.0f; f >= -0.05; f -= 0.01f)
+        {
+            Color c = lvlIndicateText.color;
+            c.a = f;
+            lvlIndicateText.color = c;
+
+            yield return new WaitForSeconds(0.01f);
+        }
+        fadeFinished = true;
+        lvlIsFinished = false;
+    }
+
+    IEnumerator Wait1Sec()
+    {
+        lvlIsFinished = true;
+        yield return new WaitForSeconds(1f);
+        secPassed = true;
+        
+    }
+//
+    IEnumerator Back2Menu()
+    {
+        yield return new WaitForSeconds(4.0f);
+        SceneManager.LoadScene(0);
+    }
+
+    public void previous()
+    {
+        int k = SceneManager.GetActiveScene().buildIndex - 1;
+        
+        SceneManager.LoadScene(k);
+    }
+
+    public void nextLevel()
+    {
+        int g = SceneManager.GetActiveScene().buildIndex + 1;
+
+        SceneManager.LoadScene(g);
+    }
+    //
+}
+
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using TMPro;
+using UnityEditor;
+using UnityEngine.UI;
+using System.Security.Cryptography;
+
+public class Menu2Game : MonoBehaviour
+{
+
+    
+    private Vector3 startPos = new Vector3(0, 1, -2);
+    private bool fadeFinished1 = false;
+    private bool fadeFinished2 = false;
+    private SpriteRenderer[] screenRend;
+    private TextMeshProUGUI menuText;
+    //private Button btn;
+    
+    void Start()
+    {
+        transform.position = startPos;
+
+        /*btn = GetComponentInChildren<Button>();
+        ColorBlock forNow = btn.colors;
+        forNow.normalColor = ColorThemes.objectColor;
+        forNow.highlightedColor = ColorThemes.objectColor;
+        forNow.pressedColor = ColorThemes.objectColor;
+        /*forNow.normalColor.a = 0f;
+        forNow.highlightedColor.a = 0;
+        forNow.pressedColor.a = 0;*/
+
+
+        menuText = GetComponentInChildren<TextMeshProUGUI>();
+        menuText.color = ColorThemes.objectColor;
+
+        screenRend = GetComponentsInChildren<SpriteRenderer>();
+        foreach (SpriteRenderer s in screenRend)
+        {
+            s.color = ColorThemes.backgroundColor;
+            s.material.SetColor("_Color", new Color32(255, 255, 255, 255));
+            Color c = s.material.color;//
+            c.a = 0;//
+            s.material.color = c;
+        }
+
+        //StartCoroutine("FadeTextIn");
+
+    }
+
+    void Update()
+    {
+        if(GameObject.FindGameObjectsWithTag("Play Button").Length == 0)
+        {
+            StartCoroutine("FadeTextOut");
+            StartCoroutine("FadeScreenOut");
+            if (fadeFinished1 && fadeFinished2)
+            {
+                SceneManager.LoadScene("Level1");
+            }
+        }   
+    }
+    IEnumerator FadeScreenOut()
+    {
+        for (float f = 0f; f <= 1f; f += 0.01f)
+        {
+            foreach (SpriteRenderer s in screenRend)
+            {
+                Color c = s.material.color;//
+                c.a = f;//
+                s.material.color = c;
+            }
+            yield return new WaitForSeconds(0.01f);
+        }
+        fadeFinished1 = true;
+        
+    }
+
+    IEnumerator FadeTextIn()
+    {
+     
+        for (float a = 0f; a <= 1f; a += 0.01f)
+        {
+            Color d = menuText.color;
+            d.a = a;
+            menuText.color = d;
+            yield return new WaitForSeconds(0.01f);
+        }
+    }
+    IEnumerator FadeTextOut()
+    {
+        for(float a = 1f; a >= 0f; a -= 0.01f)
+        {
+            Color f = menuText.color;
+            f.a = a;
+            menuText.color = f;
+            yield return new WaitForSeconds(0.01f);
+            
+        }
+        fadeFinished2 = true;
+    }
+
+    public void goToSettings()
+    {
+        foreach(SpriteRenderer s in screenRend)
+        {
+            Color c = s.material.color;//
+            c.a = 1f;//
+            s.material.color = c;
+        }
+    }
+}
+
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public static class nextLvl
+{
+    public static int next = 0;
+
+}
+
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+
+
+
+public class OnClickTest : MonoBehaviour
+{
+    
+    public bool clicked;
+    public bool fadefinished;
+    public bool connection = false;
+
+    public float childy;
+
+    private float speed = 0.25f;
+    private float receiveSpeed = 2;
+    private float rate = 2;
+    private float maxReceiverHeight;
+    private float origSize;
+
+    public int clickTime ;
+    private int timesClicked;
+
+    public GameObject child1;
+    public GameObject hookr;
+    public GameObject hooka;
+    public GameObject receiver;
+    public GameObject expandBtn;
+
+  
+    private LineRenderer[] lineRends;
+    
+
+    private SpriteRenderer[] childrenRend;
+
+
+
+    private Color32 applyAll = ColorThemes.objectColor;
+    private Color32 tintCancel = new Color32(255, 255, 255, 255);
+    void Start()
+    {
+
+        maxReceiverHeight = 1.5f * receiver.transform.localScale.y;
+
+        lineRends = GetComponentsInChildren<LineRenderer>();
+        childrenRend = GetComponentsInChildren<SpriteRenderer>();
+        //Setting all colors to the same thing
+        foreach (SpriteRenderer cRend in childrenRend)
+        {
+            cRend.material.SetColor("_Color", tintCancel);
+            cRend.color = applyAll;
+        }
+        foreach (LineRenderer test in lineRends)
+        {
+
+            test.startColor = applyAll;
+            test.endColor = applyAll;
+        }
+        hookr.transform.position = hooka.transform.position;
+        origSize = receiver.transform.localScale.y;
+    }
+
+    private void FixedUpdate()
+    {
+        hookr.transform.position = hooka.transform.position;
+       
+    }
+
+    void Update()
+    {
+
+    
+        childy = child1.transform.localScale.y;//shows var
+        
+        if (clicked)
+        {
+            if (receiver.transform.localScale.y < maxReceiverHeight)
+            {
+                Vector3 vc = new Vector3(receiver.transform.localScale.x, receiver.transform.localScale.y + rate * receiveSpeed * Time.deltaTime);
+                receiver.transform.localScale = vc;
+            }
+            if (!connection)
+            {
+                if (childy > 0)
+                {
+                    
+                    Vector3 vec = new Vector3(child1.transform.localScale.x, childy - rate * speed * Time.deltaTime);
+                    child1.transform.localScale = vec;
+             
+
+
+                }
+            }
+            if (childy <= 0)
+            {
+                FindObjectOfType<AudioManager>().PlayOnObject(0, gameObject, "Retraction");//stops sound
+               // FindObjectOfType<AudioManager>().Stop("Retraction");
+                child1.SetActive(false);
+                expandBtn.SetActive(false);
+                clicked = false;
+                StartCoroutine("Fadeout");
+                FindObjectOfType<AudioManager>().Play("FadeAway");
+                while (receiver.transform.localScale.y > origSize )
+                {
+                    Vector3 cv = new Vector3(receiver.transform.localScale.x, receiver.transform.localScale.y - rate * receiveSpeed * 0.05f * Time.deltaTime);
+                    receiver.transform.localScale = cv;
+
+                }
+                hookr.SetActive(false);
+
+            } 
+            
+        }
+
+        if (fadefinished)
+        {
+            hookr.SetActive(false);
+            Destroy(hookr);
+            Destroy(gameObject);
+            fadefinished = false;
+
+        }
+
+        hookr.transform.position = hooka.transform.position;
+    }
+
+    
+    void OnMouseDown()
+    {
+
+        timesClicked ++;
+        if (!connection)
+        {
+            if (timesClicked <= clickTime)
+            {
+
+                FindObjectOfType<AudioManager>().Play("ClickDown");
+                
+                FindObjectOfType<AudioManager>().PlayOnObject(1, gameObject, "Retraction");
+                Vector3 a = new Vector3(expandBtn.transform.localScale.x * 1.25f, expandBtn.transform.localScale.y * 1.25f);
+                expandBtn.transform.localScale = a;
+
+            }
+
+            clicked = true;
+        }
+    }
+
+
+    private void OnMouseUpAsButton()
+    {
+        if (!connection)
+        {
+            if (timesClicked <= clickTime)
+            {
+                FindObjectOfType<AudioManager>().Play("ClickUp");
+                Vector3 b = new Vector3(1.0f, 1.0f);
+                expandBtn.transform.localScale = b;
+            }
+        }
+
+    }
+
+    IEnumerator Fadeout()
+    {
+        for (float f = 1f; f >= -0.05f; f -= 0.05f)
+        {
+            foreach (LineRenderer lineRend in lineRends)
+            {
+                Color h = lineRend.startColor;
+                h.a = f;
+                lineRend.startColor = h;
+                h = lineRend.endColor;
+                h.a = f;
+                lineRend.endColor = h;
+            }
+            foreach (SpriteRenderer cRend in childrenRend)
+            {
+                Color b = cRend.material.color;
+                b.a = f;
+                cRend.material.color = b;
+            }
+         
+
+            yield return new WaitForSeconds(0.01f);
+
+        }
+        fadefinished = true;
+
+    }
+
+
+}
+     
+    
+
+
+    
+using System.Collections;
+using UnityEngine;
+
+public class OnClickTriangle : MonoBehaviour
+{
+
+    public bool clicked;
+    public bool fadefinished;
+    public bool connection = false;
+    public bool endIt = false;
+
+    public float childy;
+
+    private float speed = 0.25f;
+    private float receiveSpeed = 2;
+    private float rate = 2;
+    private float maxReceiverHeight;
+    private float origSize;
+
+    public int clickTime;
+    private int timesClicked;
+
+    public GameObject child1;
+    public GameObject end;
+    public GameObject start;
+
+    public GameObject expandBtn;
+
+    private LineRenderer[] lineRends;
+
+    private SpriteRenderer[] childrenRend;
+
+    private Color32 applyAll = ColorThemes.objectColor;
+    private Color32 tintCancel = new Color32(255, 255, 255, 255);
+    void Start()
+    {
+        maxReceiverHeight = 1.5f * start.transform.localScale.y;
+        origSize = start.transform.localScale.y;
+        lineRends = GetComponentsInChildren<LineRenderer>();
+        childrenRend = GetComponentsInChildren<SpriteRenderer>();
+        //Setting all colors to the same thing
+        foreach (SpriteRenderer cRend in childrenRend)
+        {
+            cRend.material.SetColor("_Color", tintCancel);
+            cRend.color = applyAll;
+        }
+        foreach (LineRenderer test in lineRends)
+        {
+
+            test.startColor = applyAll;
+            test.endColor = applyAll;
+        }
+  
+    }
+    void Update()
+    {
+        childy = child1.transform.localScale.y;//shows var
+
+        if (clicked)
+        {
+            if (start.transform.localScale.y < maxReceiverHeight)
+            {
+                Vector3 vc = new Vector3(start.transform.localScale.x, start.transform.localScale.y + rate * receiveSpeed * Time.deltaTime);
+                start.transform.localScale = vc;
+            }
+            if (!connection)
+            {
+                if (!endIt)
+                {
+                    Vector3 vec = new Vector3(child1.transform.localScale.x, childy + rate * speed * Time.deltaTime);
+                    child1.transform.localScale = vec;
+                }
+                 
+            }
+            if (endIt)
+            {
+                FindObjectOfType<AudioManager>().PlayOnObject(0, gameObject, "Retraction");
+                //potentially needs to stop audio on audiomanager if there are audio problems
+                expandBtn.SetActive(false);
+                clicked = false;
+                StartCoroutine("Fadeout");
+                FindObjectOfType<AudioManager>().Play("FadeAway");
+                while (start.transform.localScale.y > origSize)
+                {
+                    Vector3 cv = new Vector3(start.transform.localScale.x, start.transform.localScale.y - rate * receiveSpeed * 0.05f * Time.deltaTime);
+                    start.transform.localScale = cv;
+
+                }
+              
+                endIt = false;
+            }
+
+        }
+
+        if (fadefinished)
+        {
+            end.SetActive(false);
+            Destroy(end);
+            Destroy(gameObject);
+            fadefinished = false;
+
+        }
+
+    }
+
+
+    void OnMouseDown()
+    {
+
+        timesClicked++;
+        if (!connection)
+        {
+            if (timesClicked <= clickTime)
+            {
+
+                FindObjectOfType<AudioManager>().Play("ClickDown");
+                FindObjectOfType<AudioManager>().PlayOnObject(1, gameObject, "Retraction");
+                Vector3 a = new Vector3(expandBtn.transform.localScale.x * 1.25f, expandBtn.transform.localScale.y * 1.25f);
+                expandBtn.transform.localScale = a;
+
+            }
+
+            clicked = true;
+        }
+    }
+
+
+    private void OnMouseUpAsButton()
+    {
+        if (!connection)
+        {
+            if (timesClicked <= clickTime)
+            {
+                FindObjectOfType<AudioManager>().Play("ClickUp");
+                Vector3 b = new Vector3(1.0f, 1.0f);
+                expandBtn.transform.localScale = b;
+            }
+        }
+
+    }
+
+    IEnumerator Fadeout()
+    {
+        for (float f = 1f; f >= -0.05f; f -= 0.05f)
+        {
+            foreach (LineRenderer lineRend in lineRends)
+            {
+                Color h = lineRend.startColor;
+                h.a = f;
+                lineRend.startColor = h;
+                h = lineRend.endColor;
+                h.a = f;
+                lineRend.endColor = h;
+            }
+            foreach (SpriteRenderer cRend in childrenRend)
+            {
+                Color b = cRend.material.color;
+                b.a = f;
+                cRend.material.color = b;
+            }
+
+
+            yield return new WaitForSeconds(0.01f);
+
+        }
+        fadefinished = true;
+
+    }
+
+
+}
+
+
+
+
+
+using System.Collections;
+using System.Collections.Generic;
+using TMPro;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+
+
+
+
+
+public class OnCollision : MonoBehaviour
+{
+
+    public GameObject TrueForScreen;
+
+    private OnClickTest[] reference;
+    private OnClickTriangle[] triangleRef;
+    void Start()
+    {
+        reference = GetComponentsInParent<OnClickTest>();
+        triangleRef = GetComponentsInParent<OnClickTriangle>();
+    }
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+
+
+        if (!gameObject.CompareTag(collision.gameObject.tag))
+        {
+
+            FindObjectOfType<AudioManager>().Stop("Retraction");
+            foreach (AudioSource stopAll in gameObject.GetComponentsInParent<AudioSource>())
+            {
+           
+                stopAll.Stop();
+            }
+            FindObjectOfType<AudioManager>().Play("CollideError");
+            //FindObjectOfType<AudioManager>().Stop("Retraction");
+            foreach (OnClickTest scriptRef in reference)
+            {
+                scriptRef.connection = true;
+            }
+            foreach(OnClickTriangle A in triangleRef)
+            {
+                A.connection = true;
+            }
+            Instantiate(TrueForScreen);  
+        }
+
+    }
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        //For Triangle Btns to prevent object entering each others' hitboxes.
+        if (collision.gameObject.CompareTag(gameObject.tag))
+        {
+
+            foreach (OnClickTriangle b in triangleRef)
+            {
+                b.endIt = true;
+            }
+        }
+    }
+
+
+}
+
+
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+public class PauseActions : MonoBehaviour
+{
+    public static bool gameIsPaused = false;
+
+    private Camera mainCam;
+
+    private AudioListener toggle;
+    
+   // private CircleCollider2D[] all;
+
+    private SpriteRenderer rend;
+
+    private int current;
+
+    private bool playOnce = true;
+
+    public GameObject theLevel;
+    public GameObject nxtLvlBtn;
+
+    public Canvas pauseMenu;
+    // Start is called before the first frame update
+    void Start()
+    {
+        current = nextLvl.next;
+        if (current < SceneManager.GetActiveScene().buildIndex)
+        {
+
+            nxtLvlBtn.gameObject.SetActive(false);
+        }
+        rend = GetComponent<SpriteRenderer>();
+        mainCam = FindObjectOfType<Camera>();
+        toggle = mainCam.GetComponent<AudioListener>();
+ 
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        current = nextLvl.next;
+        if (current < SceneManager.GetActiveScene().buildIndex)
+        {
+
+            nxtLvlBtn.gameObject.SetActive(false);
+        }
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            if (gameIsPaused)
+            {
+                Resume();
+            }
+            else
+            {
+                Pause();
+            }
+        }
+
+        if(playOnce && CurrentLevelManager.lvlIsFinished)
+        {
+            StartCoroutine(fadeOut());
+        
+            
+            playOnce = false;
+            CurrentLevelManager.lvlIsFinished = false;
+        }
+    }
+
+    private void OnMouseDown()
+    {
+        if (gameIsPaused)
+        {
+            Resume();
+        }
+        else
+        {
+            Pause();
+        }
+    }
+
+    public void Resume()
+    {
+        toggle.enabled = true;
+        foreach (Collider2D b in theLevel.GetComponentsInChildren<CircleCollider2D>())
+        {
+            b.enabled = true;
+        }
+        pauseMenu.gameObject.SetActive(false);
+        Time.timeScale = 1f;
+        gameIsPaused = false;
+    }
+    public void Pause()
+    {
+        toggle.enabled = false;
+        foreach(Collider2D b in theLevel.GetComponentsInChildren<CircleCollider2D>())
+        {
+
+            b.enabled = false;
+        }
+      
+        pauseMenu.gameObject.SetActive(true);
+        Time.timeScale = 0f;
+        gameIsPaused = true;
+    }
+
+    public void previousLvl()
+    {
+        int k = SceneManager.GetActiveScene().buildIndex - 1;
+
+        SceneManager.LoadScene(k);
+        Time.timeScale = 1;
+    }
+    public void nextLevel()
+    {
+        int g = SceneManager.GetActiveScene().buildIndex + 1;
+
+        SceneManager.LoadScene(g);
+        Time.timeScale = 1;
+    }
+
+    public void back2Menu()
+    {
+        SceneManager.LoadScene(0);
+        Time.timeScale = 1;
+    }
+
+    IEnumerator fadeOut()
+    {
+        for(float f = 1; f >= 0; f -= 0.01f)
+        {
+            Color c = rend.material.color;
+            c.a = f;
+            rend.material.color = c;
+
+            yield return new WaitForSeconds(0.01f);
+        }
+ 
+    }
+}
+
+using JetBrains.Annotations;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using UnityEngine.UI;
+
+public class ScreenFadeOut : MonoBehaviour
+{
+
+
+
+    public Color c;
+    private Color32 currentInstance = ColorThemes.backgroundColor;
+
+    private Vector3 startPos = new Vector3(0, 0, -1);
+
+    public int numberOfTFS;
+    public int orderOfFade = 0;
+
+    private SpriteRenderer screenRend;
+    void Start()
+    {
+        transform.position = startPos;
+        screenRend = gameObject.GetComponent<SpriteRenderer>();
+        screenRend.material.color = currentInstance;
+        StartCoroutine("FadeScreenIn");
+    }
+
+ 
+    void Update()
+    {
+        numberOfTFS = GameObject.FindGameObjectsWithTag("TFS").Length;
+        if (GameObject.FindGameObjectsWithTag("TFS").Length > 0)
+        {
+            StartCoroutine("FadeScreenOut");
+            for (int a = 0; a <= GameObject.FindGameObjectsWithTag("TFS").Length; a += 1)
+            {
+                Destroy(GameObject.FindGameObjectWithTag("TFS"));
+            }
+        }
+    }
+    public IEnumerator FadeScreenOut()
+    {
+        for (float f = -0.05f; f <= 1.0; f += 0.01f)
+        {
+            c = screenRend.material.color;
+            c.a = f;
+            screenRend.material.color = c;
+
+            yield return new WaitForSeconds(0.01f);
+        }
+
+        
+        Scene scene = SceneManager.GetActiveScene();
+        SceneManager.LoadScene(scene.name);
+
+
+    }
+
+   public IEnumerator FadeScreenIn()
+    {
+        yield return new WaitForSeconds(0.1f);
+        for (float a = 1.0f; a >= -0.05; a -= 0.01f)
+        {
+            c = screenRend.material.color;
+            c.a = a;
+            screenRend.material.color = c;
+            yield return new WaitForSeconds(0.01f);
+        }
+
+
+    }
+
+
+
+
+
+
+}
+
+
+using UnityEngine.Audio;
+using UnityEngine;
+
+[System.Serializable]
+public class Sound
+{
+
+	public string name;
+
+	public AudioClip clip;
+
+	[Range(0f, 1f)]
+	public float volume = .75f;
+	[Range(0f, 1f)]
+	public float volumeVariance = .1f;
+
+	[Range(.1f, 3f)]
+	public float pitch = 1f;
+	[Range(0f, 1f)]
+	public float pitchVariance = .1f;
+
+	public bool loop = false;
+
+	public AudioMixerGroup mixerGroup;
+
+	[HideInInspector]
+	public AudioSource source;
+
+}
+
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Switch : MonoBehaviour
+{
+
+    public bool clicked;
+    public bool fadefinished;
+    public bool connection = false;
+
+    public float childy;
+
+    private float speed = 0.25f;
+    private float receiveSpeed = 2;
+    private float rate = 2;
+    private float maxReceiverHeight;
+    private float origSize;
+
+    public int clickTime;
+    private int timesClicked;
+
+    public GameObject child1;
+    public GameObject hookr;
+    public GameObject hooka;
+    public GameObject receiver;
+    public GameObject expandBtn;
+
+
+    private LineRenderer[] lineRends;
+
+
+    private SpriteRenderer[] childrenRend;
+
+
+
+    private Color32 applyAll = ColorThemes.objectColor;
+    private Color32 tintCancel = new Color32(255, 255, 255, 255);
+    void Start()
+    {
+
+        maxReceiverHeight = 1.5f * receiver.transform.localScale.y;
+
+        lineRends = GetComponentsInChildren<LineRenderer>();
+        childrenRend = GetComponentsInChildren<SpriteRenderer>();
+        //Setting all colors to the same thing
+        foreach (SpriteRenderer cRend in childrenRend)
+        {
+            cRend.material.SetColor("_Color", tintCancel);
+            cRend.color = applyAll;
+        }
+        foreach (LineRenderer test in lineRends)
+        {
+
+            test.startColor = applyAll;
+            test.endColor = applyAll;
+        }
+        hookr.transform.position = hooka.transform.position;
+        origSize = receiver.transform.localScale.y;
+    }
+
+    private void FixedUpdate()
+    {
+        hookr.transform.position = hooka.transform.position;
+
+    }
+
+    void Update()
+    {
+
+
+        childy = child1.transform.localScale.y;//shows var
+
+        if (clicked)
+        {
+            if (timesClicked <= clickTime)
+            {
+                if (receiver.transform.localScale.y < maxReceiverHeight)
+                {
+                    Vector3 vc = new Vector3(receiver.transform.localScale.x, receiver.transform.localScale.y + rate * receiveSpeed * Time.deltaTime);
+                    receiver.transform.localScale = vc;
+                }
+                if (!connection)
+                {
+                    if (childy > 0)
+                    {
+
+                        Vector3 vec = new Vector3(child1.transform.localScale.x, childy - rate * speed * Time.deltaTime);
+                        child1.transform.localScale = vec;
+
+
+
+                    }
+                }
+                if (childy <= 0)
+                {
+                    FindObjectOfType<AudioManager>().PlayOnObject(0, gameObject, "Retraction");//stops sound
+                                                                                               // FindObjectOfType<AudioManager>().Stop("Retraction");
+                    child1.SetActive(false);
+                    expandBtn.SetActive(false);
+                    clicked = false;
+                    StartCoroutine("Fadeout");
+                    FindObjectOfType<AudioManager>().Play("FadeAway");
+                    while (receiver.transform.localScale.y > origSize)
+                    {
+                        Vector3 cv = new Vector3(receiver.transform.localScale.x, receiver.transform.localScale.y - rate * receiveSpeed * 0.05f * Time.deltaTime);
+                        receiver.transform.localScale = cv;
+
+                    }
+                    hookr.SetActive(false);
+
+                }
+            }
+
+        }
+
+        if (fadefinished)
+        {
+            hookr.SetActive(false);
+            Destroy(hookr);
+            Destroy(gameObject);
+            fadefinished = false;
+
+        }
+
+        hookr.transform.position = hooka.transform.position;
+    }
+
+
+    void OnMouseDown()
+    {
+
+        timesClicked++;
+        if (!connection)
+        {
+            if (timesClicked <= clickTime)
+            {
+
+                FindObjectOfType<AudioManager>().Play("ClickDown");
+
+                FindObjectOfType<AudioManager>().PlayOnObject(1, gameObject, "Retraction");
+                Vector3 a = new Vector3(expandBtn.transform.localScale.x * 1.25f, expandBtn.transform.localScale.y * 1.25f);
+                expandBtn.transform.localScale = a;
+
+            }
+
+            clicked = true;
+        }
+    }
+
+
+    private void OnMouseUpAsButton()
+    {
+        if (!connection)
+        {
+            if (timesClicked <= clickTime)
+            {
+                FindObjectOfType<AudioManager>().Play("ClickUp");
+                Vector3 b = new Vector3(1.0f, 1.0f);
+                expandBtn.transform.localScale = b;
+            }
+        }
+
+    }
+
+    IEnumerator Fadeout()
+    {
+        for (float f = 1f; f >= -0.05f; f -= 0.05f)
+        {
+            foreach (LineRenderer lineRend in lineRends)
+            {
+                Color h = lineRend.startColor;
+                h.a = f;
+                lineRend.startColor = h;
+                h = lineRend.endColor;
+                h.a = f;
+                lineRend.endColor = h;
+            }
+            foreach (SpriteRenderer cRend in GetComponentsInChildren<SpriteRenderer>())
+            {
+                Color b = cRend.material.color;
+                b.a = f;
+                cRend.material.color = b;
+            }
+
+
+            yield return new WaitForSeconds(0.01f);
+
+        }
+        fadefinished = true;
+
+    }
+
+}
+
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class ToggleSwitch : MonoBehaviour
+{
+    private Switch reference;
+    private bool isActive;
+    public GameObject signal;
+    // Start is called before the first frame update
+    void Start()
+    {
+        signal.SetActive(false);
+        isActive = false;
+        reference = GetComponentInParent<Switch>();
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        if (isActive)
+        {
+            signal.SetActive(true);
+            reference.clickTime = 1;
+        }
+        if (!isActive)
+        {
+            signal.SetActive(false);
+            reference.clickTime = 0;
+        }
+    }
+
+
+    private void OnMouseDown()
+    {
+        if (isActive)
+        {
+            isActive = false;
+        }
+        else {
+            isActive = true;
+        }
+    }
+}
+
