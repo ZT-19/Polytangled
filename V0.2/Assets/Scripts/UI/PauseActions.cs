@@ -80,8 +80,7 @@ public class PauseActions : MonoBehaviour
     {
         foreach (AudioSource a in theLevel.GetComponentsInChildren<AudioSource>())
         {
-            a.Play();
-            
+            a.Play();   
         }
         foreach (Collider2D b in theLevel.GetComponentsInChildren<CircleCollider2D>())
         {
@@ -95,12 +94,10 @@ public class PauseActions : MonoBehaviour
     {
         foreach (AudioSource a in theLevel.GetComponentsInChildren<AudioSource>())
         {
-          
             a.Pause();
         }
         foreach (Collider2D b in theLevel.GetComponentsInChildren<CircleCollider2D>())
         {
-
             b.enabled = false;
         }
       

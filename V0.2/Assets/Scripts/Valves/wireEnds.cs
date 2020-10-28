@@ -9,6 +9,8 @@ public class wireEnds : MonoBehaviour
     public GameObject referenceEnd;
     private bool every5Sec = true;
     private bool found = false;
+
+
     void Start()
     {
         
@@ -32,6 +34,7 @@ public class wireEnds : MonoBehaviour
             }           
         }
     }
+
     public void runTimeFctns(int x)
     {
         if (x == 1)
@@ -41,6 +44,20 @@ public class wireEnds : MonoBehaviour
         if (x == 0)
         {
             StartCoroutine(recieverTrue());
+        }
+    }
+
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+
+    }
+    private void OnTriggerStay2D(Collider2D collision)
+    {
+        if (collision.gameObject.GetComponent<valveEndCollisions>())//gameObject ref
+        {
+            //  Debug.Log("valve to wire");
+            referenceEnd = collision.gameObject;
+            found = true;
         }
     }
     IEnumerator signalTrue()
@@ -61,27 +78,8 @@ public class wireEnds : MonoBehaviour
     {
         yield return new WaitForSeconds(5.0f);
         every5Sec = true;
-        
-    }
-
-    private void OnTriggerEnter2D(Collider2D collision)
-    {
 
     }
-    private void OnTriggerStay2D(Collider2D collision)
-    {
-        if (collision.gameObject.GetComponent<valveEndCollisions>())//gameObject ref
-        {
-            //  Debug.Log("valve to wire");
-            referenceEnd = collision.gameObject;
-            found = true;
-        }
-    }
+    
 
- /*   public void testTrue()
-    {
-        referenceEnd.GetComponent<valveEndCollisions>().activated = true;
-        referenceEnd.GetComponent<valveEndCollisions>().receiveWire = true;
-        Debug.Log("Suck");
-    }*/
 }
